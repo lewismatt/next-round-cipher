@@ -29,7 +29,9 @@ endorsed 2026-10-24).
   players are ranked by their best single guess (most Exact, then most
   Misplaced); an exact tie is a draw. In solo, exhausting the cap records as
   uncracked.
-- Invalid guesses are rejected without consuming the turn. An optional turn
+- In no-repeats presets, guesses must also be repeat-free (design amendment
+  A1, 2026-10-24). Invalid guesses are rejected without consuming the turn.
+  An optional turn
   timer (30 seconds to 7 days, or none) skips a missed turn; membership loss
   pauses the match with the deadline preserved.
 
