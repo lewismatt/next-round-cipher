@@ -63,10 +63,10 @@ is developed and verified against. CI does the same.
 
 ## Bundling into a Next Round deployment
 
-Per the platform's module model, an operator adds a reviewed package to the
-server build registry and redeploys API/web/worker together. The mechanism
-below is the one verified end-to-end against the core platform (draft PR
-`lewismatt/next-round#46`, CI green on all jobs, 2026-10-24):
+The bundling wiring is part of the core platform: PR
+`lewismatt/next-round#46` merged on 2026-10-25 (merge commit `99f03082`,
+post-merge CI green on all jobs), so a stock Next Round build includes
+Cipher. The mechanism, verified end-to-end against the core platform:
 
 1. **Fetch this repo into the core checkout as a workspace package.** The
    core repo's `scripts/fetch-cipher.sh` clones this repository into
@@ -80,18 +80,22 @@ below is the one verified end-to-end against the core platform (draft PR
    `prepare` script) and a platform build never compiles a dependency's
    sources — workspace inclusion is what makes it build. Keep the fetched
    tree byte-identical to the pinned upstream commit.
-2. Register it next to the bundled games — a `cipher-module.ts` in each app
-   that calls `registry.register(manifest, server, { clientRoot, isDefault: true })`
-   (mirroring `trivia-module.ts`), invoked from the API server and worker
-   startup, plus a `cipher` entry in `install-bundled-games.ts`.
-3. Add the client bundle input `games/cipher/0.1.0/client` → this package's
-   `src/client.ts` in the web app's Vite config, plus match creation
-   settings UI for `preset` / `turnSeconds`.
-4. CI and the deployment image build run the fetch step before
-   `pnpm install` / the Docker build.
+2. Registration ships in the core repo: a `cipher-module.ts` in each app
+   calls `registry.register(manifest, server, { clientRoot, isDefault: true })`
+   (mirroring `trivia-module.ts`) from API server and worker startup, with a
+   `cipher` entry in `install-bundled-games.ts`.
+3. The web app's Vite config carries the client bundle input
+   `games/cipher/0.1.0/client` → this package's `src/client.ts`, and the
+   shell has match creation settings UI for `preset` / `turnSeconds`.
+4. Core CI and the deployment image build run the fetch step before
+   `pnpm install` / the Docker build; the core README's quickstart documents
+   the same step for local builds. The fetch pin defaults to this repo's
+   `4fbbfee1` and can be overridden with `CIPHER_REF`.
 
-The core repository intentionally carries no Cipher code; deployments that
-don't want the game simply never bundle it.
+The core repository tracks no Cipher code — the module's sources are
+fetched into `games/cipher/` at build time and gitignored — but bundling
+is built into the platform, not an operator add-on: a stock deployment
+registers Cipher alongside Crossword and Trivia.
 
 ## License
 
