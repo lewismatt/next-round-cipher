@@ -64,17 +64,31 @@ is developed and verified against. CI does the same.
 ## Bundling into a Next Round deployment
 
 Per the platform's module model, an operator adds a reviewed package to the
-server build registry and redeploys API/web/worker together. For Cipher:
+server build registry and redeploys API/web/worker together. The mechanism
+below is the one verified end-to-end against the core platform (draft PR
+`lewismatt/next-round#46`, CI green on all jobs, 2026-10-24):
 
-1. Add `@next-round/game-cipher` (this package) as a dependency of
-   `apps/api` and `apps/worker`, and build it.
+1. **Fetch this repo into the core checkout as a workspace package.** The
+   core repo's `scripts/fetch-cipher.sh` clones this repository into
+   `games/cipher/` (gitignored) at a pinned commit; the `games/*` workspace
+   glob picks it up and `apps/api` / `apps/worker` depend on
+   `@next-round/game-cipher` via `workspace:*`, so the monorepo build
+   compiles it alongside the platform's own packages and its dependencies
+   on `@next-round/contracts` / `game-sdk` / `game-client` resolve to the
+   platform's copies. A registry- or git-sourced dependency does **not**
+   work: this package ships sources only (no committed `dist/`, no
+   `prepare` script) and a platform build never compiles a dependency's
+   sources — workspace inclusion is what makes it build. Keep the fetched
+   tree byte-identical to the pinned upstream commit.
 2. Register it next to the bundled games — a `cipher-module.ts` in each app
    that calls `registry.register(manifest, server, { clientRoot, isDefault: true })`
    (mirroring `trivia-module.ts`), invoked from the API server and worker
    startup, plus a `cipher` entry in `install-bundled-games.ts`.
 3. Add the client bundle input `games/cipher/0.1.0/client` → this package's
-   `src/client.ts` in the web app's Vite config, and (optionally) match
-   creation settings UI for `preset` / `turnSeconds`.
+   `src/client.ts` in the web app's Vite config, plus match creation
+   settings UI for `preset` / `turnSeconds`.
+4. CI and the deployment image build run the fetch step before
+   `pnpm install` / the Docker build.
 
 The core repository intentionally carries no Cipher code; deployments that
 don't want the game simply never bundle it.
